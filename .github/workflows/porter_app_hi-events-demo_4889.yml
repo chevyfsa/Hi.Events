@@ -11,8 +11,6 @@ jobs:
               uses: actions/checkout@v4
             - name: Set up Docker Buildx
               uses: docker/setup-buildx-action@v3
-              with:
-                platforms: linux/amd64
             - name: Set Github tag
               id: vars
               run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
@@ -27,7 +25,7 @@ jobs:
                 PORTER_CLUSTER: "4889"
                 PORTER_DEPLOYMENT_TARGET_ID: ff5d56f1-7bd8-4927-8502-a38c3c300d13
                 PORTER_HOST: https://dashboard.porter.run
-                PORTER_PR_NUMBER: ${{ github.event.number }}
+                PORTER_PR_NUMBER: ${{ github.event.pull_request.number || '' }}
                 PORTER_PROJECT: "16106"
                 PORTER_REPO_NAME: ${{ github.event.repository.name }}
                 PORTER_TAG: ${{ steps.vars.outputs.sha_short }}

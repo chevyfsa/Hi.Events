@@ -1,5 +1,4 @@
-# syntax=docker/dockerfile:1
-FROM --platform=$BUILDPLATFORM node:alpine AS node-frontend
+FROM node:18-alpine AS node-frontend
 
 WORKDIR /app/frontend
 
@@ -11,13 +10,31 @@ COPY ./frontend .
 
 RUN yarn install && yarn build
 
-FROM serversideup/php:beta-8.3.2-fpm-alpine
+FROM php:8.3-apache
 
 ENV PHP_OPCACHE_ENABLE=1
 
-RUN install-php-extensions intl
+RUN apt-get update && apt-get install -y \
+    libpng-dev \
+    libjpeg-dev \
+    libfreetype6-dev \
+    libicu-dev \
+    libzip-dev \
+    zip \
+    unzip \
+    git \
+    nodejs \
+    npm \
+    supervisor \
+    redis-tools \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN apk add --no-cache nodejs yarn nginx supervisor
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j$(nproc) gd pdo pdo_mysql zip intl opcache
+
+RUN npm install -g yarn
+
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 COPY --from=node-frontend /app/frontend /app/frontend
 
@@ -36,11 +53,35 @@ RUN mkdir -p /app/backend/bootstrap/cache \
         --prefer-dist \
     && chmod -R 755 /app/backend/vendor/ezyang/htmlpurifier/library/HTMLPurifier/DefinitionCache/Serializer
 
-COPY ./docker/all-in-one/nginx/nginx.conf /etc/nginx/nginx.conf
-COPY ./docker/all-in-one/supervisor/supervisord.conf /etc/supervisord.conf
+# Configure Apache
+RUN a2enmod rewrite
+RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
+
+# Create Apache virtual host
+RUN echo '<VirtualHost *:80>\n\
+    DocumentRoot /app/frontend/dist\n\
+    <Directory /app/frontend/dist>\n\
+        AllowOverride All\n\
+        Require all granted\n\
+        FallbackResource /index.html\n\
+    </Directory>\n\
+    Alias /api /app/backend/public\n\
+    <Directory /app/backend/public>\n\
+        AllowOverride All\n\
+        Require all granted\n\
+        <IfModule mod_rewrite.c>\n\
+            RewriteEngine On\n\
+            RewriteCond %{REQUEST_FILENAME} !-f\n\
+            RewriteCond %{REQUEST_FILENAME} !-d\n\
+            RewriteRule . /api/index.php [L]\n\
+        </IfModule>\n\
+    </Directory>\n\
+</VirtualHost>' > /etc/apache2/sites-available/000-default.conf
+
+COPY ./docker/all-in-one/supervisor/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 COPY ./docker/all-in-one/scripts/startup.sh /startup.sh
-RUN dos2unix /startup.sh && chmod +x /startup.sh
+RUN chmod +x /startup.sh
 
 EXPOSE 80
 
