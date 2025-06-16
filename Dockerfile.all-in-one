@@ -1,4 +1,4 @@
-FROM node:20-alpine AS node-frontend
+FROM --platform=linux/amd64 node:20-alpine AS node-frontend
 
 WORKDIR /app/frontend
 
@@ -10,7 +10,7 @@ COPY ./frontend .
 
 RUN yarn install && yarn build
 
-FROM php:8.3-apache
+FROM --platform=linux/amd64 php:8.3-apache
 
 ENV PHP_OPCACHE_ENABLE=1
 
@@ -37,7 +37,7 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
 
 RUN npm install -g yarn
 
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+COPY --from=composer:latest --platform=linux/amd64 /usr/bin/composer /usr/bin/composer
 
 COPY --from=node-frontend /app/frontend /app/frontend
 
