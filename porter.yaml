@@ -5,6 +5,10 @@ build:
   method: docker
   dockerfile: Dockerfile.all-in-one
   context: .
+  buildpacks: []
+  builder: ""
+  buildArgs: {}
+  target: ""
 
 services:
   - name: web

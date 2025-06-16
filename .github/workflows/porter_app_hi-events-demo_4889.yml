@@ -9,6 +9,10 @@ jobs:
         steps:
             - name: Checkout code
               uses: actions/checkout@v4
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v3
+              with:
+                platforms: linux/amd64
             - name: Set Github tag
               id: vars
               run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
@@ -16,8 +20,9 @@ jobs:
               uses: porter-dev/setup-porter@v0.1.0
             - name: Deploy stack
               timeout-minutes: 30
-              run: porter apply --platform linux/amd64
+              run: porter apply
               env:
+                DOCKER_DEFAULT_PLATFORM: linux/amd64
                 PORTER_APP_NAME: hi-events-demo
                 PORTER_CLUSTER: "4889"
                 PORTER_DEPLOYMENT_TARGET_ID: ff5d56f1-7bd8-4927-8502-a38c3c300d13
