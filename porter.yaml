@@ -1,0 +1,54 @@
+version: v2
+name: hi-events-demo
+
+build:
+  method: docker
+  dockerfile: Dockerfile.all-in-one
+  context: .
+
+services:
+  - name: web
+    type: web
+    port: 80
+    build:
+      method: docker
+      dockerfile: Dockerfile.all-in-one
+      context: .
+    resources:
+      cpu: 500m
+      memory: 1Gi
+    autoscaling:
+      min_replicas: 1
+      max_replicas: 3
+      target_cpu_utilization_percentage: 70
+    env:
+      - name: APP_KEY
+        source: env_group
+        name: hi-events-config
+      - name: JWT_SECRET
+        source: env_group
+        name: hi-events-config
+      - name: DATABASE_URL
+        source: env_group
+        name: hi-events-config
+      - name: REDIS_HOST
+        source: env_group
+        name: hi-events-config
+      - name: REDIS_PORT
+        source: env_group
+        name: hi-events-config
+      - name: VITE_FRONTEND_URL
+        source: env_group
+        name: hi-events-config
+      - name: VITE_API_URL_CLIENT
+        source: env_group
+        name: hi-events-config
+      - name: VITE_API_URL_SERVER
+        source: env_group
+        name: hi-events-config
+      - name: APP_CDN_URL
+        source: env_group
+        name: hi-events-config
+      - name: APP_FRONTEND_URL
+        source: env_group
+        name: hi-events-config
