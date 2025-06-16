@@ -52,41 +52,10 @@ jobs:
         working-directory: ./backend
         run: composer install --no-dev --no-progress --no-scripts --optimize-autoloader
 
-      - name: Install Vapor CLI
-        run: composer global require laravel/vapor-cli
-
-      - name: Set Deployment Environment
+      - name: Skip Backend Deployment
         run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            echo "VAPOR_ENV=${{ github.event.inputs.environment }}" >> "$GITHUB_ENV"
-            echo "TEST_MODE=${{ github.event.inputs.test_mode }}" >> "$GITHUB_ENV"
-          elif [[ "${{ github.ref_name }}" == "develop" ]]; then
-            echo "VAPOR_ENV=staging" >> "$GITHUB_ENV"
-            echo "TEST_MODE=false" >> "$GITHUB_ENV"
-          else
-            echo "VAPOR_ENV=production" >> "$GITHUB_ENV"
-            echo "TEST_MODE=false" >> "$GITHUB_ENV"
-          fi
-
-      - name: Log Branch and Environment
-        run: |
-          echo "🚀 Deploying to Vapor environment: ${{ env.VAPOR_ENV }}"
-          echo "🧪 Test mode: ${{ env.TEST_MODE }}"
-
-      - name: Validate Deployment Configuration
-        working-directory: ./backend
-        run: |
-          if [[ "${{ env.TEST_MODE }}" == "true" ]]; then
-            echo "✅ TEST MODE: Would deploy to ${{ env.VAPOR_ENV }} environment"
-            echo "vapor deploy ${{ env.VAPOR_ENV }} --dry-run"
-            exit 0
-          fi
-
-      - name: Deploy to Vapor
-        working-directory: ./backend
-        run: vapor deploy ${{ env.VAPOR_ENV }}
-        env:
-          VAPOR_API_TOKEN: ${{ secrets.VAPOR_API_TOKEN }}
+          echo "✅ Backend deployment skipped - using ECR containerized deployment instead"
+          echo "🐳 Docker images are built and pushed via the build-ecr.yml workflow"
 
   frontend:
     name: Deploy Frontend
